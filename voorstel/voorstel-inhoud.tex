@@ -10,75 +10,145 @@
 % Dit voorstel is gebaseerd op het onderzoeksvoorstel dat werd geschreven in het
 % kader van het vak Research Methods dat ik (vorig/dit) academiejaar heb
 % uitgewerkt (met medesturent VOORNAAM NAAM als mede-auteur).
-% 
+%
 
 \section{Inleiding}%
 \label{sec:inleiding}
 
-Waarover zal je bachelorproef gaan? Introduceer het thema en zorg dat volgende zaken zeker duidelijk aanwezig zijn:
+Eniris ontwikkelt SmartgridOne, een controller die bij bedrijven met zonnepanelen onder meer batterijen, warmtepompen en laadpalen aanstuurt. Om die toestellen vooruit te plannen, heeft de controller een voorspelling nodig van de productie van de zonnepanelen (PV-productie). Hoe nauwkeuriger die voorspelling, hoe lager de energiekosten van de klant \autocite{Schmitt2021}.
 
-\begin{itemize}
-  \item kaderen thema
-  \item de doelgroep
-  \item de probleemstelling en (centrale) onderzoeksvraag
-  \item de onderzoeksdoelstelling
-\end{itemize}
+Eniris beschikt vandaag al over een PV-voorspelling. Het cloudplatform zet daarvoor de weersvoorspelling van Open-Meteo om naar vermogen, in uurwaarden per meteostation en tot zeven dagen vooruit. Die omzetting gebruikt enkel de oriëntatie, de hellingshoek en het piekvermogen (kWp) die de installateur invulde. Ze rekent geen verliezen mee en houdt geen rekening met de lagere opbrengst van warme panelen. Een interne analyse van het Eniris-platform (oktober 2026, niet gepubliceerd) toonde dat de voorspelling op een heldere dag ongeveer 18\,\% boven de productie lag die met standaardverliezen te verwachten is. Daarnaast is de oriëntatie een optioneel veld: de eenvoudige configurator vult standaard zuid en 45° in. Bij een deel van de installaties komt de ingevulde waarde daardoor niet overeen met de werkelijkheid. Tot slot leert de voorspelling nooit bij uit de productie die de installatie zelf meet.
 
-Denk er aan: een typische bachelorproef is \textit{toegepast onderzoek}, wat betekent dat je start vanuit een concrete probleemsituatie in bedrijfscontext, een \textbf{casus}. Het is belangrijk om je onderwerp goed af te bakenen: je gaat voor die \textit{ene specifieke probleemsituatie} op zoek naar een goede oplossing, op basis van de huidige kennis in het vakgebied.
+Die tekortkomingen hebben gevolgen voor de planning. De controller bevat de PV-voorspelling al als gegevensbron, maar de planning, die tot 36 uur vooruit kijkt, gebruikt ze nog niet. Een betrouwbaardere voorspelling is een voorwaarde om dat wel te doen. De gegevens om de voorspelling te verbeteren, zijn grotendeels aanwezig. Volgens dezelfde analyse registreert 98\,\% van de PV-omvormers het geleverde wisselstroomvermogen (AC-vermogen), en heeft naar schatting 12\,\% (ongeveer 3.000 omvormers) daarvan minstens een jaar historiek. Bovendien logt de controller zijn eigen setpoints per omvormer. Daaruit is rechtstreeks af te lezen wanneer de controller een installatie bewust begrensde (curtailment).
 
-De doelgroep moet ook concreet en duidelijk zijn, dus geen algemene of vaag gedefinieerde groepen zoals \emph{bedrijven}, \emph{developers}, \emph{Vlamingen}, enz. Je richt je in elk geval op it-professionals, een bachelorproef is geen populariserende tekst. Eén specifiek bedrijf (die te maken hebben met een concrete probleemsituatie) is dus beter dan \emph{bedrijven} in het algemeen.
+Metingen aan de gelijkstroomzijde van de omvormer (DC-stroom en -spanning) geven meer detail over de panelen. Naar schatting heeft echter minder dan 1\,\% van de omvormers daarvan een jaar historiek. Dit onderzoek steunt daarom op het AC-vermogen en beperkt zich tot 20 tot 40 installaties met minstens een jaar meetdata. Periodes met curtailment of clipping (een omvormer die het vermogen van de panelen begrenst) vallen uit de data en worden niet gereconstrueerd. De centrale onderzoeksvraag luidt:
 
-Formuleer duidelijk de onderzoeksvraag! De begeleiders lezen nog steeds te veel voorstellen waarin we geen onderzoeksvraag terugvinden.
+\begin{quote}
+\textit{In welke mate verbetert een kalibratie per installatie op de eigen gemeten AC-productie de PV-voorspelling van Eniris voor 1 tot 7 dagen vooruit, in vergelijking met de huidige omzetting?}
+\end{quote}
 
-Schrijf ook iets over de doelstelling. Wat zie je als het concrete eindresultaat van je onderzoek, naast de uitgeschreven scriptie? Is het een proof-of-concept, een rapport met aanbevelingen, \ldots Met welk eindresultaat kan je je bachelorproef als een succes beschouwen?
+\noindent Om die vraag te beantwoorden, stelt dit onderzoek drie deelvragen over het probleemdomein:
+
+\begin{enumerate}
+  \item[P1.] Hoe zet Eniris vandaag een weersvoorspelling om naar PV-vermogen, en hoe groot is de fout per voorspellingsdag en weertype?
+  \item[P2.] Welke problemen met de datakwaliteit (curtailment, clipping, uitval, schaduw, sneeuw) komen voor in de gemeten productie, en hoe vaak?
+  \item[P3.] Bij welk deel van de installaties ontbreekt de paneelconfiguratie (oriëntatie, hellingshoek, piekvermogen) of wijkt ze af van wat de gemeten productie aangeeft?
+\end{enumerate}
+
+\noindent Daarnaast zijn er vier deelvragen over het oplossingsdomein:
+
+\begin{enumerate}
+  \item[O1.] Welke installatieparameters (effectief piekvermogen, verliezen, temperatuurgedrag, oriëntatie en hellingshoek) zijn uit het gemeten AC-vermogen te schatten, en hoe nauwkeurig?
+  \item[O2.] Hoeveel nauwkeuriger is de gekalibreerde voorspelling dan de huidige omzetting, een fysisch model met standaardwaarden en een machinelearningmodel, per voorspellingsdag (1 tot 7) en weertype?
+  \item[O3.] Hoeveel dagen meetdata heeft een installatie nodig voor een betrouwbare kalibratie?
+  \item[O4.] Hoeveel rekentijd vraagt de kalibratie per installatie, en waar past ze het best: op de controller of in de cloud?
+\end{enumerate}
+
+Het einddoel is een proof of concept in Python dat de kalibratie uitvoert en de voorspellingen vergelijkt. Een rapport met aanbevelingen voor het data- en ontwikkelteam van Eniris vult het aan. Het onderzoek slaagt wanneer het de onderzoeksvraag met meetbare resultaten beantwoordt, ook als de verbetering klein blijkt.
+
+Sectie~\ref{sec:literatuurstudie} bespreekt de relevante literatuur. Sectie~\ref{sec:methodologie} beschrijft de werkwijze en de planning, en sectie~\ref{sec:verwachte_resultaten} schetst het verwachte resultaat.
 
 %---------- Stand van zaken ---------------------------------------------------
 
 \section{Literatuurstudie}%
 \label{sec:literatuurstudie}
 
-Hier beschrijf je de \emph{state-of-the-art} rondom je gekozen onderzoeksdomein, d.w.z.\ een inleidende, doorlopende tekst over het onderzoeksdomein van je bachelorproef. Je steunt daarbij heel sterk op de professionele \emph{vakliteratuur}, en niet zozeer op populariserende teksten voor een breed publiek. Wat is de huidige stand van zaken in dit domein, en wat zijn nog eventuele open vragen (die misschien de aanleiding waren tot je onderzoeksvraag!)?
+Deze sectie bespreekt eerst hoe PV-voorspellingen werken en waarom hun nauwkeurigheid telt (P1). Daarna volgen fysische modellen en de verliezen die ze meerekenen (O1), en methoden om de configuratie van een installatie uit haar productie af te leiden (P3 en O1). De sectie sluit af met de positionering van dit onderzoek.
 
-Je mag de titel van deze sectie ook aanpassen (literatuurstudie, stand van zaken, enz.). Zijn er al gelijkaardige onderzoeken gevoerd? Wat concluderen ze? Wat is het verschil met jouw onderzoek?
+\subsection{PV-voorspelling en het belang van nauwkeurigheid}
 
-Verwijs bij elke introductie van een term of bewering over het domein naar de vakliteratuur, bijvoorbeeld~\autocite{Hykes2013}! Denk zeker goed na welke werken je refereert en waarom.
+PV-voorspellingen verschillen in hoe ver ze vooruit kijken: van enkele minuten tot meerdere dagen. Voor de volgende dag en later is een weersvoorspelling de belangrijkste invoer \autocite{Pandzic2024}. \textcite{Gaboitaolelwe2023} vergeleken machinelearningmodellen op zonnepanelen in Utrecht, met de weersvoorspelling voor de volgende dag als invoer. Gradient boosting en random forest scoorden het best, met ongeveer 37\,\% minder fout dan de basisvoorspelling ``morgen wordt zoals vandaag''.
 
-Draag zorg voor correcte literatuurverwijzingen! Een bronvermelding hoort thuis \emph{binnen} de zin waar je je op die bron baseert, dus niet er buiten! Maak meteen een verwijzing als je gebruik maakt van een bron. Doe dit dus \emph{niet} aan het einde van een lange paragraaf. Baseer nooit teveel aansluitende tekst op eenzelfde bron.
+Volgens \textcite{Pandzic2024} weegt de kwaliteit van de data vaak zwaarder door dan de keuze van het model. Ze raden aan om met eenvoudige modellen te beginnen en de resultaten te meten met de gemiddelde absolute fout (MAE), de wortel van de gemiddelde kwadratische fout (RMSE) en een skill score, die uitdrukt hoeveel beter een model is dan een basismodel. Dat sluit aan bij dit onderzoek, dat geen complexer model zoekt, maar betere informatie over de installatie zelf.
 
-Als je informatie over bronnen verzamelt in JabRef, zorg er dan voor dat alle nodige info aanwezig is om de bron terug te vinden (zoals uitvoerig besproken in de lessen Research Methods).
+Dat voorspellingsfouten geld kosten, tonen \textcite{Schmitt2021} aan. In hun simulatie van een kantoorgebouw met zonnepanelen en een batterij stegen de energiekosten naarmate de PV-voorspelling slechter werd.
 
-% Voor literatuurverwijzingen zijn er twee belangrijke commando's:
-% \autocite{KEY} => (Auteur, jaartal) Gebruik dit als de naam van de auteur
-%   geen onderdeel is van de zin.
-% \textcite{KEY} => Auteur (jaartal)  Gebruik dit als de auteursnaam wel een
-%   functie heeft in de zin (bv. ``Uit onderzoek door Doll & Hill (1954) bleek
-%   ...'')
+\subsection{Fysische modellen en verliezen}
 
-Je mag deze sectie nog verder onderverdelen in subsecties als dit de structuur van de tekst kan verduidelijken.
+Een fysisch model berekent het vermogen stap voor stap: de stand van de zon, de instraling op de panelen, de paneeltemperatuur en het vermogen dat daaruit volgt. De Python-bibliotheek pvlib bevat al die stappen en is in onderzoek en industrie wijdverspreid \autocite{Anderson2023}. De nauwkeurigheid van zo'n model hangt wel af van de waarden die erin gaan.
+
+Een veelgebruikt vertrekpunt is het PVWatts-model van NREL. Dat rekent standaard met ongeveer 14\,\% systeemverliezen (onder meer door vuil, kabels en mismatch) en met een eenvoudig temperatuurmodel \autocite{Dobos2014}. Die standaardwaarden zijn een gemiddelde over installaties. Of het loont om ze per installatie te schatten uit het gemeten vermogen, is precies wat dit onderzoek test \textcolor{red}{[BRON NODIG: recente studie over kalibratie van verliezen of piekvermogen op gemeten AC-vermogen]}.
+
+\subsection{Configuratie afleiden uit productiedata}
+
+De gegevens over een installatie zijn vaak onvolledig of fout. \textcite{Lingfors2025} stellen vast dat het geïnstalleerde vermogen, de hellingshoek en de oriëntatie van verspreide PV-installaties dikwijls ontbreken of niet kloppen, wat simulaties en voorspellingen minder nauwkeurig maakt. Zij leiden de oriëntatie af uit LiDAR-hoogtedata, maar de productie zelf bevat die informatie ook. Een oostgerichte installatie piekt bijvoorbeeld vroeger op de dag dan een zuidgerichte. \textcite{Perry2023} vergeleken vier open algoritmen die oriëntatie en hellingshoek schatten uit enkel het AC-vermogen en de locatie. Op 44 installaties met gekende configuratie zaten de twee beste methoden mediaan ongeveer 5° naast de werkelijke oriëntatie en 1° naast de hellingshoek. Daarvoor moesten periodes met schaduw en clipping eerst uit de data verdwijnen. Bibliotheken zoals Solar Data Tools automatiseren die datakwaliteitsanalyse \autocite{Miskovich2025}. Voor Eniris, waar de oriëntatie een optioneel veld is, biedt zo'n schatting een manier om ontbrekende of foute waarden te vervangen.
+
+\subsection{Positionering van dit onderzoek}
+
+Samengevat kunnen zowel fysische modellen als machine learning een weersvoorspelling omzetten naar vermogen \autocite{Anderson2023,Gaboitaolelwe2023}, en is de configuratie van een installatie uit haar productie af te leiden \autocite{Perry2023}. Minder onderzocht is hoeveel dat oplevert voor een voorspelling tot zeven dagen vooruit bij gewone klantinstallaties, waar curtailment, clipping en uitval de metingen verstoren. Dit onderzoek vult die lacune in met data van Eniris. Daarbij heeft Eniris een voordeel: de setpoints van de controller tonen curtailment rechtstreeks, zonder heuristieken.
 
 %---------- Methodologie ------------------------------------------------------
 \section{Methodologie}%
 \label{sec:methodologie}
 
-Hier beschrijf je hoe je van plan bent het onderzoek te voeren. Welke onderzoekstechniek ga je toepassen om elk van je onderzoeksvragen te beantwoorden? Gebruik je hiervoor literatuurstudie, interviews met belanghebbenden (bv.~voor requirements-analyse), experimenten, simulaties, vergelijkende studie, risico-analyse, PoC, \ldots?
+Dit onderzoek is een vergelijkende studie op historische data van Eniris. De werkwijze bestaat uit zes fasen, die elk een of meer deelvragen beantwoorden. Tabel~\ref{tab:planning} toont de planning tot de deadline van 8 januari 2027.
 
-Valt je onderwerp onder één van de typische soorten bachelorproeven die besproken zijn in de lessen Research Methods (bv.\ vergelijkende studie of risico-analyse)? Zorg er dan ook voor dat we duidelijk de verschillende stappen terug vinden die we verwachten in dit soort onderzoek!
+\paragraph{Fase 1: selectie van installaties (week 1).}
+De vergelijking van de modellen gebruikt 20 tot 40 installaties met minstens een jaar AC-data en een plausibel piekvermogen. Plausibel betekent hier dat het hoogst gemeten vermogen tussen 60 en 105\,\% van het ingevulde piekvermogen ligt. Voor P3 volstaat minder rekenwerk per installatie, zodat die analyse een ruimere steekproef van 200 installaties kan omvatten.
 
-Vermijd onderzoekstechnieken die geen objectieve, meetbare resultaten kunnen opleveren. Enquêtes, bijvoorbeeld, zijn voor een bachelorproef informatica meestal \textbf{niet geschikt}. De antwoorden zijn eerder meningen dan feiten en in de praktijk blijkt het ook bijzonder moeilijk om voldoende respondenten te vinden. Studenten die een enquête willen voeren, hebben meestal ook geen goede definitie van de populatie, waardoor ook niet kan aangetoond worden dat eventuele resultaten representatief zijn.
+\paragraph{Fase 2: data, filters en foutanalyse van de huidige voorspelling (week 2--3; P1, P2).}
+De weersvoorspellingen komen uit het archief van Open-Meteo, dat per variabele de voorspelling van 1 tot 7 dagen vóór het tijdstip bewaart \autocite{OpenMeteoPrevRuns}. Zo test het onderzoek met de voorspelling die toen beschikbaar was, en niet met het weer dat achteraf gemeten werd. Vervolgens markeren filters de volgende periodes:
+\begin{itemize}
+  \item curtailment: het setpoint van de controller (measurement \texttt{planning}) ligt onder het nominale vermogen van de omvormer;
+  \item clipping: het vermogen bereikt minstens 98\,\% van het nominale AC-vermogen van de omvormer;
+  \item uitval: metingen ontbreken of zijn nul terwijl de zon hoger dan 10° staat;
+  \item schaduw en sneeuw: de productie ligt op dezelfde uren of meerdere dagen na elkaar ver onder een heldere-hemelmodel uit pvlib \autocite{Anderson2023}.
+\end{itemize}
+Het onderzoek telt hoe vaak elk probleem voorkomt (P2). Tot slot bepaalt het de fout van de huidige Eniris-omzetting (B0) per voorspellingsdag en weertype (P1). Het weertype volgt uit de heldere-hemelindex van de dag, de verhouding tussen de werkelijke instraling volgens het weerarchief en de instraling bij heldere hemel: helder boven 0,7, half bewolkt tussen 0,3 en 0,7 en bewolkt onder 0,3. Bewaarde Eniris de oude voorspellingen niet, dan herberekent het onderzoek ze met dezelfde omzetting op de gearchiveerde weersvoorspellingen.
 
-Uit dit onderdeel moet duidelijk naar voor komen dat je bachelorproef ook technisch voldoen\-de diepgang zal bevatten. Het zou niet kloppen als een bachelorproef informatica ook door bv.\ een student marketing zou kunnen uitgevoerd worden.
+\paragraph{Fase 3: kalibratie en schatting van de oriëntatie (week 4--5; P3, O1).}
+Per installatie past de methode een pvlib-model aan het gemeten AC-vermogen van de trainingsperiode aan. Ze schat zo het effectieve piekvermogen, de totale verliesfactor en het temperatuurgedrag. Voor die drie parameters bestaat geen gemeten referentie. Hun nauwkeurigheid (O1) blijkt daarom uit twee controles: de fout van het gekalibreerde model op de testperiode, en de stabiliteit van de geschatte waarden wanneer de kalibratie op verschillende trainingsperiodes van drie maanden loopt. Oriëntatie en hellingshoek volgen uit de methoden die \textcite{Perry2023} het best evalueerden. Die schatting werkt ook wanneer de installateur de oriëntatie niet invulde. Waar de installateur wel een waarde invulde die afwijkt van de standaard zuid en 45°, dient die waarde als controle van de schatting. Een installatie met panelen in twee richtingen op één omvormer krijgt één effectieve oriëntatie. Voor de voorspelling volstaat dat, maar zo'n installatie valt buiten de controle. Voor P3 telt het onderzoek drie groepen: installaties zonder ingevulde oriëntatie of met de standaardwaarde, installaties met een afwijking van meer dan 20° in oriëntatie of 10° in hellingshoek, en installaties waarvan het geschatte piekvermogen meer dan 15\,\% van de ingevulde waarde verschilt.
 
-Je beschrijft ook al welke tools (hardware, software, diensten, \ldots) je denkt hiervoor te gebruiken of te ontwikkelen.
+\paragraph{Fase 4: modellen en evaluatie (week 6--7; O2).}
+De vergelijking omvat vijf modellen:
+\begin{itemize}
+  \item \textbf{B0}: de huidige Eniris-omzetting, zonder verliezen;
+  \item \textbf{B1}: pvlib met standaardwaarden: PVWatts-verliezen van ongeveer 14\,\% en een temperatuurmodel \autocite{Anderson2023,Dobos2014};
+  \item \textbf{E1}: pvlib, per installatie gekalibreerd op de AC-data uit fase 3;
+  \item \textbf{B2}: gradient boosting (LightGBM) op weersvoorspelling en historisch vermogen \autocite{Gaboitaolelwe2023};
+  \item \textbf{E2} (als er tijd is): B2 met de uitkomst van E1 als extra invoer.
+\end{itemize}
+E1 draait in twee varianten: één met de ingevulde oriëntatie en één met de geschatte oriëntatie. Het verschil tussen beide toont wat de schatting van de oriëntatie oplevert. Alle modellen leren op 2024 en worden getest op de periode vanaf januari 2025. De evaluatie meet MAE en RMSE, genormaliseerd op het piekvermogen, en een skill score ten opzichte van B0 \autocite{Pandzic2024}. Ze splitst de resultaten op per voorspellingsdag (1 tot 7) en per weertype. Zo blijkt tot welke horizon de kalibratie nog winst oplevert.
 
-Probeer ook een tijdschatting te maken. Hoe lang zal je met elke fase van je onderzoek bezig zijn en wat zijn de concrete \emph{deliverables} in elke fase?
+\paragraph{Fase 5: datavereiste en inzetbaarheid (week 8; O3, O4).}
+De kalibratie loopt opnieuw met 7, 14, 30, 90 en 180 dagen meetdata. Een kalibratie geldt als betrouwbaar wanneer de RMSE minder dan 5\,\% afwijkt van die van de kalibratie op een volledig jaar. Daarnaast meet het onderzoek de rekentijd per installatie en weegt het af of de methode beter op de controller of in de cloud draait.
+
+\paragraph{Optioneel: voegt DC iets toe?}
+Een klein aantal installaties heeft ook DC-stroom en -spanning met voldoende historiek. Als er tijd overblijft, test het onderzoek daar of de paneeltemperatuur via de spanning \autocite{Kladas2023} de voorspelling nog verbetert bovenop de AC-kalibratie. Die methode vraagt wel het aantal panelen per string, dat niet in de metadata zit.
+
+\paragraph{Fase 6: schrijven en buffer (week 9--12).}
+De resultaten komen samen in de scriptie en in een rapport met aanbevelingen voor Eniris. De kerstvakantie valt in deze periode.
+
+\paragraph{Risico's.}
+Het archief van Open-Meteo met vaste voorspellingsdagen begint voor de meeste weermodellen pas in januari 2024 \autocite{OpenMeteoPrevRuns}. In fase 2 controleert het onderzoek of die data beschikbaar is voor het weermodel dat Eniris gebruikt, en of ze overeenkomt met de voorspellingen die Eniris toen echt ontving. Zo niet, dan krimpt de trainings- of testperiode.
+
+\paragraph{Tools.}
+De analyse gebruikt Python met pandas, pvlib, LightGBM en matplotlib. De code staat in Jupyter-notebooks en een Git-repository, zodat de resultaten reproduceerbaar zijn.
+
+\begin{table}[ht]
+  \centering
+  \small
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Fase} & \textbf{Periode} & \textbf{Deliverable} \\
+    \midrule
+    1. Selectie     & 19/10--25/10 & Lijst installaties \\
+    2. Data, B0     & 26/10--8/11  & Foutanalyse B0 \\
+    3. Kalibratie   & 9/11--22/11  & Kalibratiemodule \\
+    4. Evaluatie    & 23/11--6/12  & Resultaten B0--E2 \\
+    5. O3, O4       & 7/12--13/12  & Aanbevelingen \\
+    6. Schrijven    & 14/12--8/1   & Scriptie \\
+    \bottomrule
+  \end{tabular}
+  \caption{\label{tab:planning}Tijdsplanning per fase (2026--2027), tot de deadline van 8 januari 2027. Fase 6 omvat de kerstvakantie en dient ook als buffer.}
+\end{table}
 
 %---------- Verwachte resultaten ----------------------------------------------
 \section{Verwacht resultaat, conclusie}%
 \label{sec:verwachte_resultaten}
 
-Hier beschrijf je welke resultaten je verwacht. Als je metingen en simulaties uitvoert, kan je hier al mock-ups maken van de grafieken samen met de verwachte conclusies. Benoem zeker al je assen en de onderdelen van de grafiek die je gaat gebruiken. Dit zorgt ervoor dat je concreet weet welk soort data je moet verzamelen en hoe je die moet meten.
+De grootste winst ligt naar verwachting bij E1 tegenover B0. Zodra het model verliezen en het werkelijke piekvermogen meerekent, verdwijnt de systematische overschatting van de huidige voorspelling. Ook installaties met een ontbrekende of foute oriëntatie winnen sterk, omdat de kalibratie de werkelijke oriëntatie benadert. Op heldere dagen valt een fout in het model van de installatie het meest op, waardoor de kalibratie daar het meest helpt. Op bewolkte dagen en verder in de toekomst domineert de fout van de weersvoorspelling zelf. Daardoor verwacht het onderzoek dat de voorsprong van E1 tegen dag 7 kleiner wordt, maar niet verdwijnt. Het machinelearningmodel B2 presteert naar verwachting ook beter dan B0, maar heeft meer historiek nodig. Het gecombineerde model E2 scoort naar verwachting het best.
 
-Wat heeft de doelgroep van je onderzoek aan het resultaat? Op welke manier zorgt jouw bachelorproef voor een meerwaarde?
 
-Hier beschrijf je wat je verwacht uit je onderzoek, met de motivatie waarom. Het is \textbf{niet} erg indien uit je onderzoek andere resultaten en conclusies vloeien dan dat je hier beschrijft: het is dan juist interessant om te onderzoeken waarom jouw hypothesen niet overeenkomen met de resultaten.
 
+Eniris heeft drie voordelen aan dit onderzoek. Ten eerste levert het een onderbouwd antwoord op de vraag of kalibratie op AC-metingen loont, tot welke horizon, en hoeveel meetdagen een installatie daarvoor nodig heeft. Ten tweede levert het een lijst van installaties waarvan de configuratie ontbreekt of vermoedelijk fout is, wat ook los van de voorspelling nuttig is. Ten derde levert het herbruikbare code, zoals filters voor curtailment en clipping. Een betrouwbaardere voorspelling is bovendien een voorwaarde om ze in de planning van de controller op te nemen, wat de energiekosten van de klant verlaagt \autocite{Schmitt2021}. Blijkt de verbetering klein, dan is ook dat een bruikbaar resultaat: Eniris weet dan dat een betere weersvoorspelling of een beter machinelearningmodel meer oplevert.
