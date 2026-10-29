@@ -30,7 +30,7 @@
 \academicyear{2026-2027} % TODO: pas het academiejaar aan
 
 % TODO: Werktitel
-\title{Kalibratie van PV-voorspellingen op gemeten productie bij Eniris}
+\title{Voorspelling van het netvermogen met gekalibreerde PV-modellen bij Eniris}
 
 % TODO: Studentnaam en emailadres invullen
 \author{Mirko Vandenabeele}
@@ -44,7 +44,7 @@
 
 % TODO: Geef de co-promotor op
 \supervisor[Co-promotor]{H. Geeraert (Eniris, \href{mailto:hendrik@eniris.com}{hendrik@eniris.com})}
-
+\projectrepo{https://github.com/MirkoVda/bachelorproef_Eniris}
 % Binnen welke specialisatierichting uit 3TI situeert dit onderzoek zich?
 % Kies uit deze lijst:
 %
@@ -57,16 +57,16 @@
 %   zelf
 %
 \specialisation{AI \& Data Engineering}
-\keywords{PV-voorspelling, energiemanagement, machine learning}
+\keywords{PV-voorspelling, netvermogen, energiemanagement}
 
 \begin{document}
 
 \begin{abstract}
-  Het energiemanagementsysteem SmartgridOne van Eniris stuurt bij bedrijven met zonnepanelen onder meer batterijen, warmtepompen en laadpalen aan. Om die toestellen vooruit te plannen, is een betrouwbare voorspelling van de productie van de zonnepanelen nodig. De huidige voorspelling zet een weersvoorspelling om naar vermogen op basis van de oriëntatie, de hellingshoek en het piekvermogen die de installateur invulde. Ze rekent geen verliezen en geen effect van de paneeltemperatuur mee, en ze leert nooit bij uit de gemeten productie. Daardoor overschat ze de productie systematisch. Bovendien is de oriëntatie een optioneel veld, zodat ze bij een deel van de installaties ontbreekt of op een standaardwaarde staat. De centrale vraag is in welke mate een kalibratie per installatie op de eigen gemeten productie de voorspelling voor 1 tot 7 dagen vooruit verbetert, in vergelijking met de huidige omzetting.
+  Steeds meer bedrijven combineren zonnepanelen met batterijen, warmtepompen en laadpalen, waardoor het slim aansturen van die toestellen belangrijker wordt om energiekosten te beperken. Bij Eniris neemt het energiemanagementsysteem SmartgridOne die aansturing op zich. Om de toestellen tot 36 uur vooruit te plannen, gebruikt het een voorspelling van het netvermogen: het vermogen dat een site uit het net afneemt of erin injecteert. Vandaag levert de netMeter die voorspelling, een zelflerend model dat het netvermogen als één geheel voorspelt. Daarnaast bestaat een voorspelling van de zonneproductie, maar die steunt op de configuratie die de installateur invulde, rekent geen verliezen mee en leert niet bij uit de gemeten productie. Bovendien ontbreekt de oriëntatie van de panelen bij een deel van de installaties of staat ze op een standaardwaarde. De centrale vraag is in welke mate een voorspelling die zonneproductie en verbruik apart voorspelt, met een zonnemodel dat per installatie op de gemeten productie gekalibreerd is, het netvermogen beter voorspelt dan de netMeter, voor 1 tot 36 uur vooruit.
 
-  Op historische data van 20 tot 40 installaties schat de methode per installatie het werkelijke piekvermogen, de verliezen, het temperatuurgedrag en de oriëntatie, nadat filters de periodes met begrensde productie of uitval verwijderd hebben. Het gekalibreerde fysische model staat tegenover de huidige omzetting, hetzelfde model met standaardwaarden en een machinelearningmodel. De evaluatie gebruikt de weersvoorspellingen zoals ze toen beschikbaar waren en splitst de fout op per voorspellingsdag en weertype.
+  Het onderzoek gebruikt historische data van twee groepen installaties: met en zonder ingevulde paneelconfiguratie. Per installatie leert de methode een schaalfactor uit de gemeten productie en schat ze de oriëntatie, nadat filters de periodes met begrensde productie of uitval verwijderd hebben. De nieuwe voorspelling staat tegenover de herberekende netMeter, een variant met standaardwaarden en een combinatie van beide, telkens met de weersvoorspellingen zoals ze toen beschikbaar waren.
 
-  De verwachting is dat de kalibratie vooral de systematische overschatting wegwerkt en installaties met een foute configuratie aan het licht brengt. Op bewolkte dagen en verder in de toekomst weegt de fout van de weersvoorspelling zwaarder, waardoor de winst kleiner wordt. Bevestigen de resultaten die verwachting, dan is kalibratie op de gemeten productie een haalbare eerste stap om de voorspelling in de planning van de controller op te nemen. Het onderzoek levert daarvoor een proof of concept en een aanbeveling over het aantal meetdagen dat een installatie nodig heeft.
+  De verwachting is dat de kalibratie de zonneproductie vooral nauwkeuriger voorspelt bij installaties zonder configuratie of met een fout ingevuld piekvermogen, en dat ze die installaties ook opspoort. Op bewolkte dagen en verder vooruit weegt de fout van de weersvoorspelling zwaarder, wat de winst verkleint. Omdat de nieuwe voorspelling en de netMeter andere fouten maken, levert een combinatie van beide naar verwachting de nauwkeurigste voorspelling van het netvermogen. Bevestigen de resultaten die verwachting, dan is een aparte voorspelling van zonneproductie en verbruik een haalbare stap om de planning van de controller te verbeteren. Het onderzoek levert daarvoor een proof of concept en een aanbeveling over het aantal heldere meetdagen en het leervenster dat een installatie nodig heeft.
 \end{abstract}
 
 \tableofcontents

@@ -138,3 +138,5 @@ out/
 ## minted cache
 *.minted
 _minted*/
+
+/CLAUDE.md
